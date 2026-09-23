@@ -18,6 +18,11 @@ rl.on('line', line => {
     result('completed', `live reply ${event.response.response.behavior}: ${JSON.stringify(event.response.response.updatedInput || {})}`); return;
   }
   const text = event.message.content;
+  if (text.startsWith('HOOK_FAILURE')) {
+    emit({ event: 'step_update', step_update: { tool_info: { error: { message: 'JSON hook "jsonhook__fixture_PreToolUse_0_0" failed: command failed: exit status 1' } } } });
+    emit({ event: 'result', result: { status: 'ERROR', error: 'protobuf invalid UTF-8', conversation_id: session } });
+    return process.exit(3);
+  }
   if (text.startsWith('CRASH')) return process.exit(7);
   if (text.startsWith('EMPTY')) return process.exit(0);
   if (text.startsWith('SILENT')) { timer = setTimeout(() => result(), 60000); return; }

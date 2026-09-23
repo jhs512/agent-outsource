@@ -115,6 +115,10 @@ export async function serve(filename) {
         }
         if (job.provider === 'antigravity' && event.event === 'step_update') {
           const step = event.step_update;
+          const message = step?.tool_info?.error?.message;
+          if (typeof message === 'string' && /JSON hook .* failed:/i.test(message)) {
+            ctx.hookError ||= `Provider hook failure: ${clip(message, 900)}. Inspect the named hook command/path and output encoding; preserve security hooks. Check side effects before explicit follow-up; no automatic replay.`;
+          }
           if (step?.tool_info?.error && /permission|denied|approval/i.test(JSON.stringify(step.tool_info.error))) ctx.denial = step.tool_info;
         }
         if ((job.provider === 'claude' && event.type === 'result') || (job.provider === 'antigravity' && event.event === 'result')) {
@@ -138,6 +142,7 @@ export async function serve(filename) {
       try {
         const cancelled = store.get('SELECT cancel FROM runs WHERE id=?', run.id).cancel;
         if (cancelled) store.finish(run.id, 'cancelled', 'Process tree stopped by user request', ctx.result, code);
+        else if (ctx.hookError) store.finish(run.id, 'failed', ctx.hookError, ctx.result, code);
         else if (ctx.error || code !== 0) store.finish(run.id, ctx.stopping ? 'interrupted' : 'failed', ctx.error || `CLI exited ${code}`, ctx.result, code);
         else if (ctx.denial) {
           store.finish(run.id, 'needs_review', 'Provider denied an action despite mandatory bypass; inspect provider policy or hooks. No additional permission prompt was created.', ctx.result, code);

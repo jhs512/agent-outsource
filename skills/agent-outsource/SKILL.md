@@ -23,3 +23,7 @@ Every Claude and Antigravity execution includes `--dangerously-skip-permissions`
 For command payloads, retries, cancellation, and recovery, read [the command reference](references/commands.md). For live input versus resumed sessions and provider limitations, read [provider capabilities](references/providers.md) before handling an interrupt.
 
 The service separates execution from delivery. Notification retries never rerun a worker. Interrupted executions require an explicit follow-up after checking possible side effects. An unchanged `running` value is not liveness evidence: check the service's process identity and heartbeat when investigating a stopped service.
+
+For a provider hook failure, inspect the named hook and existing artifacts using [provider recovery guidance](references/providers.md) before an explicit follow-up. Do not automatically rerun failed work or disable unrelated hooks.
+
+For Antigravity, include the absolute assigned workspace and output paths in the task prompt. Its native command tool may start in its scratch directory even when the CLI process cwd is set; verify artifacts at the requested absolute paths.

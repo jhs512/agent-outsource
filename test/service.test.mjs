@@ -49,6 +49,11 @@ test('service integration: both providers, routing, live replies, resume, cancel
   const answer = db.answer({ caller: 'caller-a', questionId: endedQ.id, response: { text: 'red' } });
   assert.equal((await terminal(answer.runId)).status, 'completed');
   const crashed = submit('CRASH'), empty = submit('EMPTY'), huge = submit('HUGE');
+  const hookFailure = submit('HOOK_FAILURE', 'antigravity');
+  const hookResult = await terminal(hookFailure.runId);
+  assert.equal(hookResult.status, 'failed');
+  assert.match(hookResult.summary, /hook.*jsonhook__fixture_PreToolUse/i);
+  assert.match(hookResult.summary, /no automatic replay/i);
   assert.equal((await terminal(crashed.runId)).status, 'failed');
   assert.equal((await terminal(empty.runId)).status, 'needs_review');
   assert.notEqual((await terminal(huge.runId)).status, 'completed');

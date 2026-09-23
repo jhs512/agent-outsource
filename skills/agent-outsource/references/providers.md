@@ -14,7 +14,9 @@ The [official headless documentation](https://antigravity.google/docs/cli/headle
 
 Ordinary human questions can be returned as a structured `waiting_user` result and answered by resuming the same conversation. This, ordinary completion, exact-session follow-up, and cancellation passed local real-CLI tests with agy 1.2.8. Native question-tool and live approval support must be reported separately. An actual control_response input produced an explicit unsupported error and exit code 2.
 
-The local native-tool tests encountered an existing orca-status PreToolUse hook failure followed by invalid UTF-8 errors. Both a manual echo test and a bypass echo test failed before successful execution. User settings were preserved. The bridge avoids `--json-schema` for agy because that path also hit the installed hook failure; it requests JSON in the prompt and validates it before completion instead. This workaround does not repair native tool execution on this computer.
+A failed JSON hook can precede a secondary invalid UTF-8 provider error. The bridge preserves the first named hook failure in the job summary, even when the CLI exits nonzero. Inspect the hook configuration, target existence, and encoding before resuming. Never suppress all hooks or replace a missing security hook with a no-op. Back up configuration before a targeted repair; a confirmed orphaned integration may be disabled using the provider's supported per-hook setting. Check existing artifacts and explicitly resume only after repair; notification retries never rerun the task.
+
+On this Windows installation, the orca-status handlers referenced five missing scripts belonging to an absent Orca installation. The config was backed up and only that orphaned integration disabled; handler definitions were retained. This is a local repair, not a setting distributed by this skill. Other installations need their own diagnosis.
 
 ## Output contract
 
