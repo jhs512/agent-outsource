@@ -8,7 +8,7 @@ description: Execute an explicitly assigned local Claude Code or Antigravity CLI
 
 Use the caller's assignment: provider, working directory, task, completion criteria, and destination Codex conversation. Codex retains coordination. This skill implements transport and lifecycle only; delegation timing, task selection, and worker selection come from the user's prompt.
 
-Run the included Node.js program by its absolute path. Node.js 24 or newer is required. It stores shared state in `~/ai-oc.sqlite` and raw logs beside it in `ai-oc.sqlite.logs/`. All normal invocations use that one DB across repositories. `--db` is for isolated verification only.
+Run the included Node.js program by its absolute path. Node.js 24 or newer is required. It stores shared state in `~/agent-outsource.sqlite` and raw logs beside it in `agent-outsource.sqlite.logs/`. All normal invocations use that one DB across repositories for the same OS user. The old `~/ai-oc.sqlite` and its logs are renamed automatically on first use; close old services and SQLite connections first. If both DB names exist, reconcile them before continuing; do not delete either automatically. `--db` is for isolated verification only.
 
 For first-time setup or missing executable/authentication prerequisites, tell the user they can explicitly invoke `$agent-outsource-setup`. The setup skill is user-invoked only; do not invoke it automatically. Normal work uses this worker skill directly and may be selected from a matching natural-language assignment.
 

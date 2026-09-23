@@ -5,8 +5,36 @@ import os from 'node:os';
 import path from 'node:path';
 import { inspectSetup } from '../skills/agent-outsource-setup/scripts/setup.mjs';
 import { executable } from '../skills/agent-outsource/scripts/executables.mjs';
-import { Store } from '../skills/agent-outsource/scripts/db.mjs';
+import { Store, defaultDb, migrateHomeDb } from '../skills/agent-outsource/scripts/db.mjs';
 const temporary = () => fs.mkdtempSync(path.join(os.tmpdir(), 'ai-oc-setup-'));
+test('home DB rename preserves records and logs and is repeatable', () => {
+  assert.equal(defaultDb, path.join(os.homedir(), 'agent-outsource.sqlite'));
+  const home = temporary(), legacy = path.join(home, 'ai-oc.sqlite');
+  const before = new Store(legacy);
+  const { jobId } = before.submit({ caller: 'fixture', key: 'migrate', name: 'preserved', cwd: process.cwd(), provider: 'claude', prompt: 'keep' });
+  before.close();
+  fs.mkdirSync(`${legacy}.logs`);
+  fs.writeFileSync(path.join(`${legacy}.logs`, 'sample.log'), 'original log');
+  const target = migrateHomeDb(home);
+  assert.equal(fs.existsSync(legacy), false);
+  assert.equal(fs.readFileSync(path.join(`${target}.logs`, 'sample.log'), 'utf8'), 'original log');
+  const after = new Store(target);
+  assert.equal(after.job(jobId).name, 'preserved');
+  after.close();
+  assert.equal(migrateHomeDb(home), target);
+});
+test('home DB migration refuses open databases and conflicting destinations', () => {
+  const home = temporary(), legacy = path.join(home, 'ai-oc.sqlite');
+  const db = new Store(legacy);
+  assert.throws(() => migrateHomeDb(home), /Close the old/);
+  db.close();
+  const target = path.join(home, 'agent-outsource.sqlite');
+  fs.writeFileSync(target, 'do not overwrite');
+  assert.throws(() => migrateHomeDb(home), /Both/);
+  assert.equal(fs.existsSync(legacy), true);
+  assert.equal(fs.readFileSync(target, 'utf8'), 'do not overwrite');
+  assert.equal(fs.existsSync(`${target}.migration-lock`), false);
+});
 const optionsText = '--dangerously-skip-permissions --input-format --output-format --resume --conversation';
 const fake = async (exe, args) => {
   if (args[0] === 'queue') return { ok: true, output: '--thread --message' };

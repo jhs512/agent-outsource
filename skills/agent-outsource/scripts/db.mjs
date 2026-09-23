@@ -4,7 +4,28 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
-export const defaultDb = path.join(os.homedir(), 'ai-oc.sqlite');
+export const defaultDb = path.join(os.homedir(), 'agent-outsource.sqlite');
+export function migrateHomeDb(home = os.homedir()) {
+  const legacy = path.join(home, 'ai-oc.sqlite');
+  const target = path.join(home, 'agent-outsource.sqlite');
+  if (!fs.existsSync(legacy)) return target;
+  const lock = `${target}.migration-lock`;
+  fs.mkdirSync(lock);
+  try {
+    if (!fs.existsSync(legacy)) return target;
+    if (fs.existsSync(target)) throw new Error('Both ai-oc.sqlite and agent-outsource.sqlite exist; reconcile them before continuing.');
+    if (['-wal', '-shm', '-journal'].some(suffix => fs.existsSync(`${legacy}${suffix}`))) {
+      throw new Error('Close the old agent-outsource service and SQLite connections before migrating ai-oc.sqlite.');
+    }
+    const oldLogs = `${legacy}.logs`, newLogs = `${target}.logs`;
+    if (fs.existsSync(newLogs)) throw new Error('agent-outsource.sqlite.logs already exists; reconcile logs before migrating.');
+    const moveLogs = fs.existsSync(oldLogs);
+    if (moveLogs) fs.renameSync(oldLogs, newLogs);
+    try { fs.renameSync(legacy, target); }
+    catch (error) { if (moveLogs) fs.renameSync(newLogs, oldLogs); throw error; }
+    return target;
+  } finally { fs.rmdirSync(lock); }
+}
 export const clip = (v, n = 1800) => String(v ?? '').slice(0, n);
 export const now = () => Date.now();
 export const uuid = () => randomUUID();
@@ -12,6 +33,7 @@ export const active = ['queued', 'running', 'waiting_user', 'waiting_permission'
 export class Store {
   constructor(filename = defaultDb) {
     this.filename = path.resolve(filename);
+    if (this.filename === defaultDb) migrateHomeDb();
     fs.mkdirSync(path.dirname(this.filename), { recursive: true });
     this.db = new DatabaseSync(this.filename);
     this.db.exec('PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL;');

@@ -19,7 +19,7 @@ README의 `npx --yes skills@latest add ...` 명령으로 GitHub 저장소의 두
 
 - Node.js 24 이상과 지원 OS
 - 작업 스킬이 함께 설치됐는지
-- 홈의 `ai-oc.sqlite` 준비, WAL 모드와 무결성 검사
+- 홈의 `agent-outsource.sqlite` 준비, WAL 모드와 무결성 검사
 - `codex queue --help`의 대상 대화·메시지 옵션
 - 설치된 작업자 CLI의 버전과 필수 실행 옵션
 - Claude의 읽기 전용 로그인 상태
@@ -28,7 +28,7 @@ README의 `npx --yes skills@latest add ...` 명령으로 GitHub 저장소의 두
 
 ## 로그인
 
-저장소·스킬 이름을 `agent-outsource`로 변경한 뒤에도 기존 상태 호환성을 위해 홈 DB는 `ai-oc.sqlite`, 로그 폴더는 `ai-oc.sqlite.logs/`를 그대로 사용한다.
+실행 폴더와 관계없이 같은 OS 사용자 계정은 `~/agent-outsource.sqlite` 하나를 공유한다. 로그는 `~/agent-outsource.sqlite.logs/`에 저장한다. 기존 `~/ai-oc.sqlite`와 로그 폴더는 첫 실행 때 새 이름으로 옮긴다. 이전 서비스와 SQLite 연결을 먼저 종료해야 하며, 두 이름의 DB가 모두 있으면 자동으로 덮어쓰거나 합치지 않고 중단한다.
 
 - Claude: 터미널에서 `claude auth login`을 실행하고 표시되는 로그인 절차를 따른다.
 - Antigravity: 터미널에서 `agy`를 열고 로그인한다. 셋업은 agy의 로그인 완료를 자동 판정하지 않는다.
