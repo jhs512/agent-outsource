@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { Store } from '../skills/agent-outsource/scripts/db.mjs';
-import { JsonLines, outcome, liveReply, providerCommand } from '../skills/agent-outsource/scripts/providers.mjs';
+import { JsonLines, outcome, liveReply, providerCommand, promptMessage } from '../skills/agent-outsource/scripts/providers.mjs';
 import { createHash } from 'node:crypto';
 import { deliverOne, recover } from '../skills/agent-outsource/scripts/service.mjs';
 const temporary = () => fs.mkdtempSync(path.join(os.tmpdir(), 'ai-oc-test-'));
@@ -158,4 +158,14 @@ test('T13 failed orphan cleanup blocks a new execution', async () => {
   await recover(db, 'replacement-owner', { identity: async () => 'same-process', killTree: async () => { throw new Error('Access denied'); } });
   assert.equal(db.job(jobId).status, 'recovery_blocked');
   assert.throws(() => db.submit(request({ key: 'resume', jobId })), /active run/); db.close();
+});
+
+test('agy schema and Windows guidance preserve native ERROR despite completed response', () => {
+  const command = providerCommand({ provider: 'antigravity' }, {});
+  assert.ok(command.args.includes('--json-schema'));
+  assert.match(promptMessage('antigravity', 'read only', 'win32').message.content, /OutputEncoding/);
+  assert.doesNotMatch(promptMessage('claude', 'read only', 'win32').message.content, /OutputEncoding/);
+  const result = outcome({ result: { status: 'ERROR', error: 'invalid UTF-8', response: JSON.stringify({status: 'completed',summary: 'artifact verified',question: ''}) } }, 'antigravity');
+  assert.equal(result.status, 'failed');
+  assert.equal(result.summary, 'invalid UTF-8');
 });

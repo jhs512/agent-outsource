@@ -11,12 +11,15 @@ export function providerCommand(job, run) {
     if (job.session) args.push('--resume', job.session);
     return { exe: executable('claude'), args };
   }
-  const args = [...common, '--print-timeout', '0'];
+  const args = [...common, '--print-timeout', '0', '--json-schema', JSON.stringify(schema)];
   if (job.session) args.push('--conversation', job.session);
   return { exe: executable('antigravity'), args };
 }
-export function promptMessage(provider, prompt) {
-  const text = `${prompt}\n\nFinal response must match this JSON schema: ${JSON.stringify(schema)}. ` +
+export function promptMessage(provider, prompt, platform = process.platform) {
+  const execution = provider === 'antigravity' && platform === 'win32'
+    ? '\nWindows execution requirement: In every PowerShell run_command, before any output, set [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $OutputEncoding = [Console]::OutputEncoding;. Use explicit absolute workspace/output paths. Start long-lived servers separately with hidden windows, redirected logs and a bounded readiness check; never wait for their lifetime in a foreground tool call.\n'
+    : '';
+  const text = `${prompt}\n${execution}\nFinal response must match this JSON schema: ${JSON.stringify(schema)}. ` +
     'Use waiting_user if a human answer is needed and put the actual question in question. Never invent human decisions. ' +
     'Use failed if the work could not be completed. A denied tool is not task success. Otherwise use completed, with question empty.';
   return provider === 'claude' ? { type: 'user', message: { role: 'user', content: text } } : { event: 'user', message: { content: text } };
