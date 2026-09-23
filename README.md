@@ -40,13 +40,13 @@ npx --yes skills@latest add jhs512/agent-outsource --global --skill "*" --agent 
 셋업 스킬은 자동 호출되지 않습니다. 사용자가 아래처럼 명시적으로 호출하세요.
 
 ```text
-$agent-outsource-setup으로 실행 준비를 확인해 줘.
+$agent-outsource-setup 실행 준비를 확인해 줘.
 ```
 
 스킬명을 포함해 확인할 내용을 지정할 수 있습니다.
 
 ```text
-$agent-outsource-setup으로 처음 사용할 준비가 됐는지 확인하고,
+$agent-outsource-setup 처음 사용할 준비가 됐는지 확인하고,
 설치나 로그인이 필요한 항목을 알려 줘.
 ```
 
@@ -59,12 +59,12 @@ Node·작업자 CLI·Codex 알림 명령을 검사하고, 홈 폴더에 작업 �
 작업 스킬은 “Claude Code에게 README 요약을 맡겨 줘” 같은 자연어 요청에서도 자동 선택할 수 있습니다. 아래처럼 스킬명을 명시해도 됩니다.
 
 ```text
-$agent-outsource로 Claude Code에게 현재 프로젝트의 README를 읽고
+$agent-outsource Claude Code에게 현재 프로젝트의 README를 읽고
 핵심을 세 줄로 요약하게 해 줘. 파일은 수정하지 마.
 ```
 
 ```text
-$agent-outsource로 Antigravity CLI에게 현재 프로젝트의 파일 구성을
+$agent-outsource Antigravity CLI에게 현재 프로젝트의 파일 구성을
 설명하게 해 줘. 파일은 수정하지 마.
 ```
 
