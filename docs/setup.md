@@ -2,14 +2,14 @@
 
 ## Codex에서 설치
 
-README의 자연어 설치 요청은 Codex의 skill-installer로 GitHub 저장소 안의 두 스킬 폴더를 설치하는 방식이다.
+README의 `npx --yes skills@latest add ...` 명령으로 GitHub 저장소의 두 스킬을 설치한다. `--agent codex`는 Codex에, `--agent codex claude-code`는 두 에이전트에 스킬 파일을 복사한다. 현재 조정 호스트는 Codex이며 결과 수신에는 `codex queue`가 필요하다.
 
 | 폴더 | 역할 |
 |---|---|
 | `skills/cli-worker-bridge` | 작업 실행, 질문·답변 전달, 같은 세션 재개, 완료 알림 |
 | `skills/cli-worker-bridge-setup` | 설치와 실행 준비 검사 |
 
-설치 위치는 `$CODEX_HOME/skills`이며, 별도 설정이 없으면 사용자 홈의 `.codex/skills`이다. 두 폴더를 나란히 설치한다. 사용자명이나 개발 PC 경로를 입력할 필요는 없다. 이미 설치된 폴더가 있으면 기존 변경을 확인한 뒤 업데이트한다.
+`--global --copy`는 선택한 에이전트의 사용자 단위 스킬 위치에 파일을 복사한다. 설치 결과에 표시되는 경로를 확인한다. 두 스킬 폴더를 나란히 설치하며 사용자명이나 개발 PC 경로를 입력할 필요는 없다. 이미 설치된 폴더가 있으면 기존 변경을 확인한 뒤 업데이트한다.
 
 ## 셋업이 확인하는 것
 
