@@ -8,7 +8,7 @@ import { executable } from '../skills/agent-outsource/scripts/executables.mjs';
 import { Store, defaultDb, migrateHomeDb } from '../skills/agent-outsource/scripts/db.mjs';
 const temporary = () => fs.mkdtempSync(path.join(os.tmpdir(), 'ai-oc-setup-'));
 test('home DB rename preserves records and logs and is repeatable', () => {
-  assert.equal(defaultDb, path.join(os.homedir(), 'agent-outsource.sqlite'));
+  assert.equal(defaultDb, path.join(os.homedir(), '.agent-outsource', 'agent-outsource.sqlite'));
   const home = temporary(), legacy = path.join(home, 'ai-oc.sqlite');
   const before = new Store(legacy);
   const { jobId } = before.submit({ caller: 'fixture', key: 'migrate', name: 'preserved', cwd: process.cwd(), provider: 'claude', prompt: 'keep' });
@@ -28,12 +28,13 @@ test('home DB migration refuses open databases and conflicting destinations', ()
   const db = new Store(legacy);
   assert.throws(() => migrateHomeDb(home), /Close the old/);
   db.close();
-  const target = path.join(home, 'agent-outsource.sqlite');
+  const target = path.join(home, '.agent-outsource', 'agent-outsource.sqlite');
+  fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, 'do not overwrite');
   assert.throws(() => migrateHomeDb(home), /Both/);
   assert.equal(fs.existsSync(legacy), true);
   assert.equal(fs.readFileSync(target, 'utf8'), 'do not overwrite');
-  assert.equal(fs.existsSync(`${target}.migration-lock`), false);
+  assert.equal(fs.existsSync(path.join(home, '.agent-outsource', 'migration-lock')), false);
 });
 const optionsText = '--dangerously-skip-permissions --input-format --output-format --resume --conversation';
 const fake = async (exe, args) => {
@@ -69,6 +70,7 @@ test('setup works from relocated skill folders without a developer username', as
   const source = path.resolve('skills/agent-outsource');
   for (const entry of fs.readdirSync(source, { recursive: true, withFileTypes: true })) {
     const from = path.join(entry.parentPath, entry.name);
+    if (path.relative(source, from).split(path.sep).includes('node_modules')) continue;
     const to = path.join(relocated, path.relative(source, from));
     if (entry.isDirectory()) fs.mkdirSync(to, { recursive: true });
     else { fs.mkdirSync(path.dirname(to), { recursive: true }); fs.copyFileSync(from, to); }
@@ -84,4 +86,12 @@ test('executable discovery respects override, PATH, and a different user home', 
   assert.equal(executable('claude', { AI_OC_CLAUDE: 'explicit.exe', PATH: bin }, 'win32'), 'explicit.exe');
   const userBin = path.join(root, 'someone-else', '.local', 'bin'); fs.mkdirSync(userBin, { recursive: true }); fs.writeFileSync(path.join(userBin, 'claude.exe'), '');
   assert.equal(executable('claude', { USERPROFILE: path.join(root, 'someone-else') }, 'win32'), path.join(userBin, 'claude.exe'));
+});
+
+test('current home database moves into dedicated writable directory without losing models', () => {
+ const home=temporary(), old=path.join(home,'agent-outsource.sqlite'); const s=new Store(old);
+ s.run('INSERT INTO models VALUES(?,?,?)','claude','default','Default');s.close();
+ const target=migrateHomeDb(home);assert.equal(target,path.join(home,'.agent-outsource','agent-outsource.sqlite'));
+ const after=new Store(target);assert.equal(after.get('SELECT model_id FROM models').model_id,'default');after.close();
+ assert.equal(fs.existsSync(old),false);
 });

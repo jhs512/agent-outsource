@@ -28,9 +28,15 @@ export async function inspectSetup({ bridgeDirectory = fileURLToPath(new URL('..
     try {
       const journal = store.get('PRAGMA journal_mode').journal_mode;
       const integrity = store.get('PRAGMA quick_check').quick_check;
+      store.db.exec('BEGIN IMMEDIATE; ROLLBACK;');
+      const logDirectory = `${store.filename}.logs`;
+      fs.mkdirSync(logDirectory, { recursive: true });
+      const probe = path.join(logDirectory, `.setup-write-${process.pid}-${Date.now()}`);
+      const fd = fs.openSync(probe, 'wx');
+      try { fs.writeSync(fd, 'write-check'); } finally { fs.closeSync(fd); fs.unlinkSync(probe); }
       add('SQLite', journal === 'wal' && integrity === 'ok' ? 'ok' : 'missing', `${store.filename} (WAL: ${journal}, 검사: ${integrity})`);
     } finally { store.close(); }
-  } catch (error) { add('SQLite', 'missing', `홈 DB를 준비하지 못했습니다: ${error.message}`); }
+  } catch (error) { add('SQLite', 'missing', `공유 DB/로그 쓰기를 준비하지 못했습니다: ${error.message}. workspace-write에서는 전용 데이터 디렉터리만 writable_roots에 추가하고 새 작업에서 확인하세요.`); }
   const codex = executable('codex');
   const queue = await run(codex, ['queue', '--help']);
   add('Codex 알림', queue.ok && /--thread/.test(queue.output) && /--message/.test(queue.output) ? 'ok' : 'missing',

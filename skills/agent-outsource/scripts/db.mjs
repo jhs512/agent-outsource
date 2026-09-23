@@ -4,21 +4,28 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
-export const defaultDb = path.join(os.homedir(), 'agent-outsource.sqlite');
+export const dataDirectory = path.join(os.homedir(), '.agent-outsource');
+export const defaultDb = path.join(dataDirectory, 'agent-outsource.sqlite');
 export function migrateHomeDb(home = os.homedir()) {
-  const legacy = path.join(home, 'ai-oc.sqlite');
-  const target = path.join(home, 'agent-outsource.sqlite');
-  if (!fs.existsSync(legacy)) return target;
-  const lock = `${target}.migration-lock`;
+  const root = path.resolve(home), directory = path.join(root, '.agent-outsource');
+  const target = path.join(directory, 'agent-outsource.sqlite');
+  const sources = ['agent-outsource.sqlite', 'ai-oc.sqlite'].map(name => path.join(root, name)).filter(file => fs.existsSync(file));
+  if (!sources.length) return target;
+  if (sources.length > 1 || fs.existsSync(target)) throw new Error('Both legacy and/or shared-directory databases exist; reconcile them before continuing.');
+  const legacy = sources[0];
+  // Both move endpoints are fixed descendants of the supplied user home.
+  if (!legacy.startsWith(root + path.sep) || !target.startsWith(directory + path.sep)) throw new Error('Invalid migration path');
+  fs.mkdirSync(directory, { recursive: true });
+  const lock = path.join(directory, 'migration-lock');
   fs.mkdirSync(lock);
   try {
     if (!fs.existsSync(legacy)) return target;
-    if (fs.existsSync(target)) throw new Error('Both ai-oc.sqlite and agent-outsource.sqlite exist; reconcile them before continuing.');
+    if (fs.existsSync(target)) throw new Error('Both legacy and shared-directory databases exist; reconcile them before continuing.');
     if (['-wal', '-shm', '-journal'].some(suffix => fs.existsSync(`${legacy}${suffix}`))) {
-      throw new Error('Close the old agent-outsource service and SQLite connections before migrating ai-oc.sqlite.');
+      throw new Error('Close the old agent-outsource service and SQLite connections before migrating the home database.');
     }
     const oldLogs = `${legacy}.logs`, newLogs = `${target}.logs`;
-    if (fs.existsSync(newLogs)) throw new Error('agent-outsource.sqlite.logs already exists; reconcile logs before migrating.');
+    if (fs.existsSync(newLogs)) throw new Error('Shared-directory logs already exist; reconcile logs before migrating.');
     const moveLogs = fs.existsSync(oldLogs);
     if (moveLogs) fs.renameSync(oldLogs, newLogs);
     try { fs.renameSync(legacy, target); }
