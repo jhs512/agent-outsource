@@ -1,0 +1,20 @@
+{
+  "name": "ai-oc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local CLI worker coordinator for Codex voice",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "node src/cli.js",
+    "mcp": "node src/mcp.js",
+    "probe:codex": "node scripts/probe-codex.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.6.5"
+  }
+}
