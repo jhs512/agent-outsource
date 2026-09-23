@@ -20,12 +20,6 @@ Codex에 말이나 글로 요청하면 지정한 CLI가 작업하고, 질문이�
 npx --yes skills@latest add jhs512/agent-outsource --global --skill "*" --agent codex --copy --yes
 ```
 
-Codex와 Claude Code 양쪽에 스킬 파일을 설치하려면 다음 명령을 사용하세요.
-
-```sh
-npx --yes skills@latest add jhs512/agent-outsource --global --skill "*" --agent codex claude-code --copy --yes
-```
-
 `--agent`는 스킬의 설치 대상을 지정합니다. 현재 작업 조정과 결과 수신은 **Codex 대화와 `codex queue`에 의존**하므로, 아래 사용 예시는 Codex에서 실행하세요. Claude Code에 파일을 설치해도 Claude Code가 조정 호스트로 지원되는 것은 아닙니다.
 
 설치된 스킬은 다음 턴부터 사용할 수 있습니다. 스킬 실행을 위한 별도 `npm install`은 필요하지 않습니다.
