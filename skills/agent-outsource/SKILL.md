@@ -20,6 +20,10 @@ Every Claude and Antigravity execution includes `--dangerously-skip-permissions`
 4. For a general question, relay the actual question and collect the human answer. Use `answer` with its question ID and the same caller. Worker permissions are automatically approved; do not ask again for that execution setting. Never supply a human preference from a guess.
 5. On completion, inspect bounded result or relevant artifact evidence. A process exit, a denied tool, `needs_review`, or an interrupted supervisor is not verified task completion.
 
+### Collect question batches
+
+When a worker asks several questions together, the conversation speaking with the user owns the batch: retain its caller/job/question IDs, each collected answer, and the unanswered items. It may ask one question at a time, especially in voice. Keep partial answers in that conversation; do not message the coordinating task or resume the worker after each answer. Once every required item has an actual answer or an explicit user delegation of that choice, send the complete batch once through the coordinating task to `answer`. Keep recommendations separate from user choices; never fill unanswered items with recommendations. Relay a partial batch only when a genuine intermediate decision from the coordinating task or worker is needed to collect the remaining answers; state that dependency and the unanswered items explicitly.
+
 For command payloads, retries, cancellation, and recovery, read [the command reference](references/commands.md). For live input versus resumed sessions and provider limitations, read [provider capabilities](references/providers.md) before handling an interrupt.
 
 The service separates execution from delivery. Notification retries never rerun a worker. Interrupted executions require an explicit follow-up after checking possible side effects. An unchanged `running` value is not liveness evidence: check the service's process identity and heartbeat when investigating a stopped service.
