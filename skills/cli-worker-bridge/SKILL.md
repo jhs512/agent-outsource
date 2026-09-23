@@ -1,5 +1,6 @@
 ---
 name: cli-worker-bridge
+disable-model-invocation: false
 description: Execute an explicitly assigned local Claude Code or Antigravity CLI task with mandatory permission bypass, relay human questions, resume its session, and deliver results to the calling Codex task.
 ---
 
@@ -9,7 +10,7 @@ Use the caller's assignment: provider, working directory, task, completion crite
 
 Run the included Node.js program by its absolute path. Node.js 24 or newer is required. It stores shared state in `~/ai-oc.sqlite` and raw logs beside it in `ai-oc.sqlite.logs/`. All normal invocations use that one DB across repositories. `--db` is for isolated verification only.
 
-For first-time setup or missing executable/authentication prerequisites, use the companion `cli-worker-bridge-setup` skill when installed. It checks readiness without calling a model. Normal work uses this worker skill directly.
+For first-time setup or missing executable/authentication prerequisites, tell the user they can explicitly invoke `$cli-worker-bridge-setup`. The setup skill is user-invoked only; do not invoke it automatically. Normal work uses this worker skill directly and may be selected from a matching natural-language assignment.
 
 Every Claude and Antigravity execution includes `--dangerously-skip-permissions`, including new runs, session resumes, and follow-ups after a question. This is the user's fixed execution requirement, not an optional request setting. General questions still require the human's actual answer; permission bypass does not choose answers or expand the assigned task.
 

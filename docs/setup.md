@@ -15,6 +15,8 @@ README의 `npx --yes skills@latest add ...` 명령으로 GitHub 저장소의 두
 
 `$cli-worker-bridge-setup`은 포함된 `scripts/setup.mjs`를 실행한다.
 
+셋업은 사용자 명시 호출 전용이며, 작업 스킬은 요청에 맞으면 자동 선택할 수 있다. Codex에서는 각 스킬의 `agents/openai.yaml`에 `policy.allow_implicit_invocation`을 셋업 `false`, 작업 `true`로 설정한다. Claude Code용 `SKILL.md`의 `disable-model-invocation`은 셋업 `true`, 작업 `false`다. Codex에서는 `$cli-worker-bridge-setup`으로 명시 호출한다. Claude Code의 명시 호출 문법은 `/cli-worker-bridge-setup`이며, 파일 설치만으로 Codex 조정 호스트 의존성이 사라지지는 않는다. 이 설정은 아래 검사 프로그램의 모델 호출 여부와 별개다. 근거: [Codex 공식 문서](https://learn.chatgpt.com/docs/build-skills), [Claude Code 공식 문서](https://code.claude.com/docs/en/skills#control-who-invokes-a-skill).
+
 - Node.js 24 이상과 지원 OS
 - 작업 스킬이 함께 설치됐는지
 - 홈의 `ai-oc.sqlite` 준비, WAL 모드와 무결성 검사

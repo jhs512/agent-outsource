@@ -1,9 +1,12 @@
 ---
 name: cli-worker-bridge-setup
+disable-model-invocation: true
 description: Set up or diagnose the local prerequisites for cli-worker-bridge after installation, checking Node.js, worker CLIs, Codex queue, authentication visibility, and the shared SQLite database.
 ---
 
 # Set up CLI worker bridge
+
+Use this skill only when the user explicitly invokes it. In Codex, use `$cli-worker-bridge-setup`.
 
 Run the bundled `scripts/setup.mjs` with Node.js using its absolute path. It expects `cli-worker-bridge` installed beside this skill and requires Node.js 24 or newer. If Node is missing, direct the user to install Node.js before running it.
 
