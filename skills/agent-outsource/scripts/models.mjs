@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import { executable } from './executables.mjs';
+import { queryClaudeModels } from './claude-models.mjs';
 
 const providers = ['claude', 'antigravity'];
 function check(provider) { if (!providers.includes(provider)) throw new Error('Invalid provider'); }
@@ -7,6 +8,8 @@ export function cachedModels(store, provider) {
   check(provider);
   const lastSuccess = store.get('SELECT last_success FROM model_refresh WHERE provider=?', provider)?.last_success ?? null;
   return { provider, lastSuccess, cached: lastSuccess !== null,
+    source: provider === 'claude' ? 'Claude Agent SDK supportedModels (installed CLI, user settings)' : 'agy models',
+    scope: provider === 'claude' ? 'Runtime selector options, including aliases; not an API catalog or per-model entitlement test' : 'CLI-reported available models',
     models: store.all('SELECT model_id AS id,display_name AS name FROM models WHERE provider=? ORDER BY model_id', provider) };
 }
 export function parseAgyModels(output) {
@@ -24,12 +27,10 @@ function query(exe, args) {
     (error, stdout) => error ? reject(new Error(`Model query failed (${error.code || 'unknown'}); cache preserved`)) : resolve(stdout)));
 }
 // Called only by the explicit models-refresh command. Normal task execution never calls this.
-export async function refreshModels(store, provider, run = query) {
+export async function refreshModels(store, provider, run = query, claudeQuery = queryClaudeModels) {
   check(provider);
-  if (provider === 'claude') return { ...cachedModels(store, provider), refreshed: false, error: 'unsupported',
-    detail: 'No supported non-interactive model-list command verified for Claude Code. Use its interactive /model picker. Existing cache preserved.' };
   try {
-    const models = parseAgyModels(await run(executable(provider), ['models']));
+    const models = provider === 'claude' ? await claudeQuery() : parseAgyModels(await run(executable(provider), ['models']));
     const timestamp = Date.now();
     store.tx(() => {
       store.run('DELETE FROM models WHERE provider=?', provider);

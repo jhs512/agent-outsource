@@ -53,3 +53,13 @@ node scripts/setup.mjs
 JSON 결과는 `node scripts/setup.mjs --json`으로 받을 수 있다. 저장소를 직접 내려받았다면 저장소 루트에서 `npm run setup`을 실행해도 된다. 둘 다 추가 npm 의존성 없이 실행된다.
 
 작업 실행은 `$agent-outsource`에 요청한다. 모든 실행의 권한은 자동 승인되며, 사용자 선택이 필요한 일반 질문에는 답을 기다린다.
+
+## Claude 모델 목록 갱신 의존성
+
+일반 외주 실행과 Antigravity 목록에는 추가 npm 설치가 필요 없다. Claude 목록을 갱신하려면 설치된 `agent-outsource` 스킬 폴더에서 한 번 실행한다.
+
+```sh
+npm install --ignore-scripts
+```
+
+그다음 Codex에 “Claude 모델 목록 갱신해 줘”라고 요청한다. 공식 Agent SDK 0.3.280의 supportedModels()로 설치된 Claude CLI와 사용자 설정의 선택 목록을 읽는다. 현재 로그인 환경을 CLI가 처리하며 별도 API 키를 요구하거나 토큰을 읽어 출력하지 않는다. 로그인·설정에 따른 선택용 별칭 목록이며 개별 모델 실행 권한을 실제 호출로 검사하지 않는다. 최초 캐시가 없거나 조회가 실패하면 그 상태를 그대로 안내한다. 자동 갱신/패키지 자동 설치는 없다.

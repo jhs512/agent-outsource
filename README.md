@@ -22,7 +22,7 @@ npx --yes skills@latest add jhs512/agent-outsource --global --skill "*" --agent 
 
 `--agent`는 스킬의 설치 대상을 지정합니다. 현재 작업 조정과 결과 수신은 **Codex 대화와 `codex queue`에 의존**하므로, 아래 사용 예시는 Codex에서 실행하세요. Claude Code에 파일을 설치해도 Claude Code가 조정 호스트로 지원되는 것은 아닙니다.
 
-설치된 스킬은 다음 턴부터 사용할 수 있습니다. 스킬 실행을 위한 별도 `npm install`은 필요하지 않습니다.
+설치된 스킬은 다음 턴부터 사용할 수 있습니다. 일반 작업 실행에는 별도 `npm install`이 필요하지 않습니다. Claude 모델 목록 갱신은 공식 SDK 의존성을 한 번 설치해야 합니다([안내](docs/setup.md)).
 
 | 스킬 | 용도 |
 |---|---|
@@ -66,7 +66,7 @@ $agent-outsource Antigravity CLI에게 현재 프로젝트의 파일 구성을
 
 ## 더 알아보기
 
-모델 목록은 “저장된 모델 목록 보여 줘”로 조회하고, “Antigravity 모델 목록 갱신해 줘”라고 명시하면 최신 목록을 받아 저장합니다. 자동·주기 갱신은 하지 않습니다. 최초 캐시가 없으면 갱신 요청이 필요합니다. Claude Code는 확인된 비대화형 목록 조회 명령이 없어 `/model` 선택기를 안내합니다.
+모델 목록은 “저장된 모델 목록 보여 줘”로 조회하고, “Antigravity 모델 목록 갱신해 줘”라고 명시하면 최신 목록을 받아 저장합니다. 자동·주기 갱신은 하지 않습니다. 최초 캐시가 없으면 갱신 요청이 필요합니다. Claude는 공식 Agent SDK로 설치된 CLI의 모델 선택 목록을 조회합니다. 별칭이 포함되며 API 전체 목록이나 개별 호출 권한 검증 결과는 아닙니다.
 
 - [설치·로그인·셋업 문제 해결](docs/setup.md)
 - [명령과 작업 기록 확인](skills/agent-outsource/references/commands.md)
