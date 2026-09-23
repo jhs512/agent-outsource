@@ -8,10 +8,11 @@
     "node": ">=24"
   },
   "scripts": {
-    "test": "node --test",
-    "start": "node src/cli.js",
-    "mcp": "node src/mcp.js",
-    "probe:codex": "node scripts/probe-codex.js"
+    "test": "node --test test/store.test.mjs test/service.test.mjs test/setup.test.mjs",
+    "start": "node skills/cli-worker-bridge/scripts/bridge.mjs",
+    "setup": "node skills/cli-worker-bridge-setup/scripts/setup.mjs",
+    "probe:codex": "node scripts/probe-codex.js",
+    "bridge": "node skills/cli-worker-bridge/scripts/bridge.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

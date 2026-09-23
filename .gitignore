@@ -1,4 +1,9 @@
 node_modules/
 .ai-oc/
 .env
+.env.*
 *.log
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite.logs/
