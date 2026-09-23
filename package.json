@@ -8,7 +8,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "test": "node --test test/store.test.mjs test/service.test.mjs test/setup.test.mjs",
+    "test": "node --test test/store.test.mjs test/service.test.mjs test/setup.test.mjs test/models.test.mjs",
     "start": "node skills/agent-outsource/scripts/bridge.mjs",
     "setup": "node skills/agent-outsource-setup/scripts/setup.mjs",
     "probe:codex": "node scripts/probe-codex.js",

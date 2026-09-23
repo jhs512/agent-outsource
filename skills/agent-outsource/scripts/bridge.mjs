@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import { Store, defaultDb, clip, now } from './db.mjs';
 import { identity, sleep } from './process.mjs';
 import { serve } from './service.mjs';
+import { cachedModels, refreshModels } from './models.mjs';
 
 const args = process.argv.slice(2);
 const dbIndex = args.indexOf('--db');
@@ -27,13 +28,18 @@ export async function ensureService(store) {
 }
 async function main() {
   if (action === 'serve') return serve(filename);
-  if (action === 'help') return console.log('bridge.mjs <submit|followup|answer|cancel|status|question|result|log|events|ack|retry|service|stop> <request.json> [--db test.sqlite]');
+  if (action === 'help') return console.log('bridge.mjs <submit|followup|answer|cancel|status|question|result|log|events|ack|retry|service|stop|models|models-refresh> <request.json> [--db test.sqlite]');
   const req = input ? JSON.parse(fs.readFileSync(path.resolve(input), 'utf8')) : {};
   if (!['service', 'stop'].includes(action) && (typeof req.caller !== 'string' || !req.caller.trim())) throw new Error('caller is required');
   const store = new Store(filename);
   try {
     let value;
-    if (['submit', 'followup'].includes(action)) {
+    if (action === 'models' || action === 'models-refresh') {
+      const providers = req.provider ? [req.provider] : ['claude', 'antigravity'];
+      value = [];
+      for (const provider of providers) value.push(action === 'models' ? cachedModels(store, provider) : await refreshModels(store, provider));
+      if (value.some(item => item.refreshed === false)) process.exitCode = 1;
+    } else if (['submit', 'followup'].includes(action)) {
       value = store.submit(req); await ensureService(store);
     } else if (action === 'answer') { value = store.answer(req); await ensureService(store); }
     else if (action === 'cancel') { value = store.cancel(req.jobId, req.caller); await ensureService(store); }

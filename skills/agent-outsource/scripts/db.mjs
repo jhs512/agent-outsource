@@ -55,8 +55,11 @@ export class Store {
       CREATE INDEX IF NOT EXISTS outbox_due ON outbox(state,due);
       CREATE TABLE IF NOT EXISTS daemon(name TEXT PRIMARY KEY,token TEXT NOT NULL,pid INTEGER NOT NULL,birth TEXT NOT NULL,heartbeat INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS controls(name TEXT PRIMARY KEY,value TEXT NOT NULL);
-      PRAGMA user_version=1;
+      CREATE TABLE IF NOT EXISTS models(provider TEXT NOT NULL,model_id TEXT NOT NULL,display_name TEXT NOT NULL,
+        PRIMARY KEY(provider,model_id));
+      CREATE TABLE IF NOT EXISTS model_refresh(provider TEXT PRIMARY KEY,last_success INTEGER NOT NULL);
     `);
+    if (this.get('PRAGMA user_version').user_version < 2) this.db.exec('PRAGMA user_version=2');
   }
   get(sql, ...args) { return this.db.prepare(sql).get(...args); }
   all(sql, ...args) { return this.db.prepare(sql).all(...args); }

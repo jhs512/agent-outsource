@@ -29,3 +29,5 @@ For a provider hook failure, inspect the named hook and existing artifacts using
 For Antigravity, include the absolute assigned workspace and output paths in the task prompt. Its native command tool may start in its scratch directory even when the CLI process cwd is set; verify artifacts at the requested absolute paths.
 
 For preview servers or watchers, require a separate background process with redirected stdout/stderr, a recorded PID, and a bounded readiness check; on Windows use a hidden process. A worker tool call must not wait indefinitely for the server lifetime. Stop only the identified task-owned process when cleanup is needed.
+
+For model-list requests, use `models` to read the SQLite cache. Only an explicit user request to refresh models authorizes `models-refresh`; never refresh during setup, ordinary execution, or on a timer. Report an empty cache and ask for an explicit refresh rather than fetching silently. Follow [the command reference](references/commands.md) for provider limitations. Model selection rules and passing a model to workers are outside this listing capability.

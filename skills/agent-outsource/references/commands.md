@@ -51,3 +51,11 @@ The daemon uses a SQLite ownership token and the OS process creation identity. A
 When an answer was being written during a crash, its exact delivery is uncertain. The run becomes interrupted; inspect before explicitly continuing. Logs and each run's saved result remain available. General questions remain distinct from the automatic permission decision.
 
 Environment overrides for local executable discovery: `AI_OC_CLAUDE`, `AI_OC_AGY`, `AI_OC_CODEX`. These name executable files, not shell command strings. Discovery checks PATH first, then the current user's standard installation locations for Claude and agy. Windows requires native `.exe` files; Codex is resolved from PATH. The companion setup skill checks the resolved executables without calling a model.
+
+## Model list cache
+
+`models` reads only SQLite. `models-refresh` queries synchronously only after the user explicitly asks to refresh. Payload: `caller`, optional `provider` (`claude` or `antigravity`); omission handles both independently. No model execution or background refresh occurs. Results include provider, models (`id`, `name`), `cached`, and `lastSuccess` (Unix milliseconds, null before success). No cache is different from an empty available-model list.
+
+Antigravity uses `agy models` and validates its tab-separated output before atomically replacing that provider's rows and success timestamp. Failed/empty/malformed queries preserve both. Refresh returns `refreshed:false` and a nonzero command exit if any requested provider fails; successful providers remain updated.
+
+Claude Code has no verified supported non-interactive model-list subcommand in the installed version. Its refresh returns unsupported and preserves any cache; use the official interactive `/model` picker. Do not substitute API model lists or guessed aliases for account availability. Reference: https://code.claude.com/docs/en/model-config . Prices, rankings, recommendations, model selection and worker model arguments are not part of this cache.

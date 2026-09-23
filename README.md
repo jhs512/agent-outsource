@@ -66,6 +66,8 @@ $agent-outsource Antigravity CLI에게 현재 프로젝트의 파일 구성을
 
 ## 더 알아보기
 
+모델 목록은 “저장된 모델 목록 보여 줘”로 조회하고, “Antigravity 모델 목록 갱신해 줘”라고 명시하면 최신 목록을 받아 저장합니다. 자동·주기 갱신은 하지 않습니다. 최초 캐시가 없으면 갱신 요청이 필요합니다. Claude Code는 확인된 비대화형 목록 조회 명령이 없어 `/model` 선택기를 안내합니다.
+
 - [설치·로그인·셋업 문제 해결](docs/setup.md)
 - [명령과 작업 기록 확인](skills/agent-outsource/references/commands.md)
 - [지원 범위와 제한](docs/limitations.md)
