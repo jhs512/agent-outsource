@@ -8,8 +8,8 @@
 
 - 계획: `docs/local-skill-plan.md`
 - 테스트 케이스: `docs/local-skill-test-cases.md`
-- 저장소 소스: `skills/cli-worker-bridge/`
-- 로컬 설치: `$CODEX_HOME/skills/cli-worker-bridge/SKILL.md` (기본 `~/.codex/skills/`)
+- 저장소 소스: `skills/agent-outsource/`
+- 로컬 설치: `$CODEX_HOME/skills/agent-outsource/SKILL.md` (기본 `~/.codex/skills/`)
 - 공유 DB: `~/ai-oc.sqlite`
 - 원본 로그: `~/ai-oc.sqlite.logs/`
 

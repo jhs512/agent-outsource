@@ -1,4 +1,4 @@
-# ai-oc
+# agent-outsource
 
 **Codex에서 Claude Code와 Antigravity CLI에 작업을 맡기는 로컬 스킬입니다.**
 
@@ -17,13 +17,13 @@ Codex에 말이나 글로 요청하면 지정한 CLI가 작업하고, 질문이�
 터미널에서 실행하면 두 스킬을 Codex에 전역 설치합니다.
 
 ```sh
-npx --yes skills@latest add jhs512/ai-oc --global --skill "*" --agent codex --copy --yes
+npx --yes skills@latest add jhs512/agent-outsource --global --skill "*" --agent codex --copy --yes
 ```
 
 Codex와 Claude Code 양쪽에 스킬 파일을 설치하려면 다음 명령을 사용하세요.
 
 ```sh
-npx --yes skills@latest add jhs512/ai-oc --global --skill "*" --agent codex claude-code --copy --yes
+npx --yes skills@latest add jhs512/agent-outsource --global --skill "*" --agent codex claude-code --copy --yes
 ```
 
 `--agent`는 스킬의 설치 대상을 지정합니다. 현재 작업 조정과 결과 수신은 **Codex 대화와 `codex queue`에 의존**하므로, 아래 사용 예시는 Codex에서 실행하세요. Claude Code에 파일을 설치해도 Claude Code가 조정 호스트로 지원되는 것은 아닙니다.
@@ -32,21 +32,21 @@ npx --yes skills@latest add jhs512/ai-oc --global --skill "*" --agent codex clau
 
 | 스킬 | 용도 |
 |---|---|
-| `cli-worker-bridge-setup` | 최초 셋업·환경 진단: Node, CLI, 로그인 상태, Codex 알림 명령, SQLite 확인 |
-| `cli-worker-bridge` | 작업 위임, 사용자 질문·답변 전달, 같은 작업자 세션 재개, 결과 수신 |
+| `agent-outsource-setup` | 최초 셋업·환경 진단: Node, CLI, 로그인 상태, Codex 알림 명령, SQLite 확인 |
+| `agent-outsource` | 작업 위임, 사용자 질문·답변 전달, 같은 작업자 세션 재개, 결과 수신 |
 
 ## 2. 셋업하기
 
 셋업 스킬은 자동 호출되지 않습니다. 사용자가 아래처럼 명시적으로 호출하세요.
 
 ```text
-$cli-worker-bridge-setup으로 실행 준비를 확인해 줘.
+$agent-outsource-setup으로 실행 준비를 확인해 줘.
 ```
 
 스킬명을 포함해 확인할 내용을 지정할 수 있습니다.
 
 ```text
-$cli-worker-bridge-setup으로 처음 사용할 준비가 됐는지 확인하고,
+$agent-outsource-setup으로 처음 사용할 준비가 됐는지 확인하고,
 설치나 로그인이 필요한 항목을 알려 줘.
 ```
 
@@ -59,12 +59,12 @@ Node·작업자 CLI·Codex 알림 명령을 검사하고, 홈 폴더에 작업 �
 작업 스킬은 “Claude Code에게 README 요약을 맡겨 줘” 같은 자연어 요청에서도 자동 선택할 수 있습니다. 아래처럼 스킬명을 명시해도 됩니다.
 
 ```text
-$cli-worker-bridge로 Claude Code에게 현재 프로젝트의 README를 읽고
+$agent-outsource로 Claude Code에게 현재 프로젝트의 README를 읽고
 핵심을 세 줄로 요약하게 해 줘. 파일은 수정하지 마.
 ```
 
 ```text
-$cli-worker-bridge로 Antigravity CLI에게 현재 프로젝트의 파일 구성을
+$agent-outsource로 Antigravity CLI에게 현재 프로젝트의 파일 구성을
 설명하게 해 줘. 파일은 수정하지 마.
 ```
 
@@ -73,7 +73,7 @@ $cli-worker-bridge로 Antigravity CLI에게 현재 프로젝트의 파일 구성
 ## 더 알아보기
 
 - [설치·로그인·셋업 문제 해결](docs/setup.md)
-- [명령과 작업 기록 확인](skills/cli-worker-bridge/references/commands.md)
+- [명령과 작업 기록 확인](skills/agent-outsource/references/commands.md)
 - [지원 범위와 제한](docs/limitations.md)
 - [공개 개발 기록과 테스트](docs/development/README.md)
 

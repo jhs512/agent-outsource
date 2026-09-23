@@ -4,10 +4,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { Store } from '../skills/cli-worker-bridge/scripts/db.mjs';
-import { JsonLines, outcome, liveReply, providerCommand } from '../skills/cli-worker-bridge/scripts/providers.mjs';
+import { Store } from '../skills/agent-outsource/scripts/db.mjs';
+import { JsonLines, outcome, liveReply, providerCommand } from '../skills/agent-outsource/scripts/providers.mjs';
 import { createHash } from 'node:crypto';
-import { deliverOne, recover } from '../skills/cli-worker-bridge/scripts/service.mjs';
+import { deliverOne, recover } from '../skills/agent-outsource/scripts/service.mjs';
 const temporary = () => fs.mkdtempSync(path.join(os.tmpdir(), 'ai-oc-test-'));
 const request = overrides => ({ caller: 'caller-a', key: 'one', name: 'safe test', cwd: process.cwd(), prompt: 'hello', provider: 'claude', ...overrides });
 

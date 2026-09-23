@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { inspectSetup } from '../skills/cli-worker-bridge-setup/scripts/setup.mjs';
-import { executable } from '../skills/cli-worker-bridge/scripts/executables.mjs';
-import { Store } from '../skills/cli-worker-bridge/scripts/db.mjs';
+import { inspectSetup } from '../skills/agent-outsource-setup/scripts/setup.mjs';
+import { executable } from '../skills/agent-outsource/scripts/executables.mjs';
+import { Store } from '../skills/agent-outsource/scripts/db.mjs';
 const temporary = () => fs.mkdtempSync(path.join(os.tmpdir(), 'ai-oc-setup-'));
 const optionsText = '--dangerously-skip-permissions --input-format --output-format --resume --conversation';
 const fake = async (exe, args) => {
@@ -35,10 +35,10 @@ test('setup rejects unsupported Node, missing sibling, and absent queue capabili
   assert.ok(result.checks.some(c => c.name === 'Codex 알림' && c.status === 'missing'));
 });
 test('setup works from relocated skill folders without a developer username', async () => {
-  const root = temporary(), relocated = path.join(root, '다른 사용자 skills', 'cli-worker-bridge');
+  const root = temporary(), relocated = path.join(root, '다른 사용자 skills', 'agent-outsource');
   // Node 24.13.1 on Windows crashes inside cpSync for this Unicode destination.
   // Copy individual files so the test exercises skill portability, not cpSync.
-  const source = path.resolve('skills/cli-worker-bridge');
+  const source = path.resolve('skills/agent-outsource');
   for (const entry of fs.readdirSync(source, { recursive: true, withFileTypes: true })) {
     const from = path.join(entry.parentPath, entry.name);
     const to = path.join(relocated, path.relative(source, from));

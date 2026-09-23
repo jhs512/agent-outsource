@@ -6,16 +6,16 @@ README의 `npx --yes skills@latest add ...` 명령으로 GitHub 저장소의 두
 
 | 폴더 | 역할 |
 |---|---|
-| `skills/cli-worker-bridge` | 작업 실행, 질문·답변 전달, 같은 세션 재개, 완료 알림 |
-| `skills/cli-worker-bridge-setup` | 설치와 실행 준비 검사 |
+| `skills/agent-outsource` | 작업 실행, 질문·답변 전달, 같은 세션 재개, 완료 알림 |
+| `skills/agent-outsource-setup` | 설치와 실행 준비 검사 |
 
 `--global --copy`는 선택한 에이전트의 사용자 단위 스킬 위치에 파일을 복사한다. 설치 결과에 표시되는 경로를 확인한다. 두 스킬 폴더를 나란히 설치하며 사용자명이나 개발 PC 경로를 입력할 필요는 없다. 이미 설치된 폴더가 있으면 기존 변경을 확인한 뒤 업데이트한다.
 
 ## 셋업이 확인하는 것
 
-`$cli-worker-bridge-setup`은 포함된 `scripts/setup.mjs`를 실행한다.
+`$agent-outsource-setup`은 포함된 `scripts/setup.mjs`를 실행한다.
 
-셋업은 사용자 명시 호출 전용이며, 작업 스킬은 요청에 맞으면 자동 선택할 수 있다. Codex에서는 각 스킬의 `agents/openai.yaml`에 `policy.allow_implicit_invocation`을 셋업 `false`, 작업 `true`로 설정한다. Claude Code용 `SKILL.md`의 `disable-model-invocation`은 셋업 `true`, 작업 `false`다. Codex에서는 `$cli-worker-bridge-setup`으로 명시 호출한다. Claude Code의 명시 호출 문법은 `/cli-worker-bridge-setup`이며, 파일 설치만으로 Codex 조정 호스트 의존성이 사라지지는 않는다. 이 설정은 아래 검사 프로그램의 모델 호출 여부와 별개다. 근거: [Codex 공식 문서](https://learn.chatgpt.com/docs/build-skills), [Claude Code 공식 문서](https://code.claude.com/docs/en/skills#control-who-invokes-a-skill).
+셋업은 사용자 명시 호출 전용이며, 작업 스킬은 요청에 맞으면 자동 선택할 수 있다. Codex에서는 각 스킬의 `agents/openai.yaml`에 `policy.allow_implicit_invocation`을 셋업 `false`, 작업 `true`로 설정한다. Claude Code용 `SKILL.md`의 `disable-model-invocation`은 셋업 `true`, 작업 `false`다. Codex에서는 `$agent-outsource-setup`으로 명시 호출한다. Claude Code의 명시 호출 문법은 `/agent-outsource-setup`이며, 파일 설치만으로 Codex 조정 호스트 의존성이 사라지지는 않는다. 이 설정은 아래 검사 프로그램의 모델 호출 여부와 별개다. 근거: [Codex 공식 문서](https://learn.chatgpt.com/docs/build-skills), [Claude Code 공식 문서](https://code.claude.com/docs/en/skills#control-who-invokes-a-skill).
 
 - Node.js 24 이상과 지원 OS
 - 작업 스킬이 함께 설치됐는지
@@ -27,6 +27,8 @@ README의 `npx --yes skills@latest add ...` 명령으로 GitHub 저장소의 두
 검사는 AI 모델을 호출하지 않고 알림도 보내지 않는다. 홈 DB와 필요한 테이블은 만들지만 기존 작업·결과를 지우지 않는다. `ok`는 검사 통과, `missing`은 필요한 조치, `optional`은 사용하려면 준비할 작업자, `manual`은 직접 확인할 항목이다.
 
 ## 로그인
+
+저장소·스킬 이름을 `agent-outsource`로 변경한 뒤에도 기존 상태 호환성을 위해 홈 DB는 `ai-oc.sqlite`, 로그 폴더는 `ai-oc.sqlite.logs/`를 그대로 사용한다.
 
 - Claude: 터미널에서 `claude auth login`을 실행하고 표시되는 로그인 절차를 따른다.
 - Antigravity: 터미널에서 `agy`를 열고 로그인한다. 셋업은 agy의 로그인 완료를 자동 판정하지 않는다.
@@ -42,7 +44,7 @@ CLI를 설치한 뒤 Codex를 다시 열어 새 PATH가 적용되게 한다. 프
 
 ## 직접 셋업 실행
 
-Codex 스킬 호출 대신 터미널을 사용하고 싶다면 설치된 `cli-worker-bridge-setup` 폴더에서 실행한다.
+Codex 스킬 호출 대신 터미널을 사용하고 싶다면 설치된 `agent-outsource-setup` 폴더에서 실행한다.
 
 ```sh
 node scripts/setup.mjs
@@ -50,4 +52,4 @@ node scripts/setup.mjs
 
 JSON 결과는 `node scripts/setup.mjs --json`으로 받을 수 있다. 저장소를 직접 내려받았다면 저장소 루트에서 `npm run setup`을 실행해도 된다. 둘 다 추가 npm 의존성 없이 실행된다.
 
-작업 실행은 `$cli-worker-bridge`에 요청한다. 모든 실행의 권한은 자동 승인되며, 사용자 선택이 필요한 일반 질문에는 답을 기다린다.
+작업 실행은 `$agent-outsource`에 요청한다. 모든 실행의 권한은 자동 승인되며, 사용자 선택이 필요한 일반 질문에는 답을 기다린다.

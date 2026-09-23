@@ -10,7 +10,7 @@
 - [필수 권한 우회 변경과 검증](../mandatory-bypass-verification.md)
 - [공개 설치 흐름 검증](setup-verification.md)
 
-현재 실행 코드는 `skills/cli-worker-bridge/scripts/`, 셋업 코드는 `skills/cli-worker-bridge-setup/scripts/`에 있다. Node.js 내장 기능만 사용한다.
+현재 실행 코드는 `skills/agent-outsource/scripts/`, 셋업 코드는 `skills/agent-outsource-setup/scripts/`에 있다. Node.js 내장 기능만 사용한다.
 
 ```sh
 npm test

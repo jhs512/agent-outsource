@@ -7,7 +7,7 @@ async function probe(exe, args) {
   return new Promise(resolve => execFile(exe, args, { windowsHide: true, timeout: 15000, maxBuffer: 128 * 1024 },
     (error, stdout, stderr) => resolve({ ok: !error, stdout: String(stdout || ''), output: String(stdout || '') + String(stderr || ''), code: error?.code })));
 }
-export async function inspectSetup({ bridgeDirectory = fileURLToPath(new URL('../../cli-worker-bridge/', import.meta.url)),
+export async function inspectSetup({ bridgeDirectory = fileURLToPath(new URL('../../agent-outsource/', import.meta.url)),
   databasePath, run = probe, platform = process.platform, nodeVersion = process.versions.node } = {}) {
   // script lives in setup/scripts; sibling skills are two levels above the script directory.
   const checks = [], workers = [];
@@ -17,7 +17,7 @@ export async function inspectSetup({ bridgeDirectory = fileURLToPath(new URL('..
   if (!['win32', 'linux'].includes(platform)) { add('OS', 'missing', '현재 프로세스 복구는 Windows/Linux만 구현되어 있습니다.'); return { configured: false, workers, checks }; }
   add('OS', platform === 'win32' ? 'ok' : 'manual', platform === 'win32' ? 'Windows' : 'Linux: 실제 CLI 통합은 Windows에서 검증했습니다.');
   if (!fs.existsSync(path.join(bridgeDirectory, 'scripts', 'db.mjs'))) {
-    add('작업 스킬', 'missing', 'cli-worker-bridge와 cli-worker-bridge-setup을 같은 skills 폴더에 설치하세요.');
+    add('작업 스킬', 'missing', 'agent-outsource와 agent-outsource-setup을 같은 skills 폴더에 설치하세요.');
     return { configured: false, workers, checks };
   }
   add('작업 스킬', 'ok', bridgeDirectory);

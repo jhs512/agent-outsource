@@ -4,9 +4,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { Store } from '../skills/cli-worker-bridge/scripts/db.mjs';
-import { sleep, identity } from '../skills/cli-worker-bridge/scripts/process.mjs';
-const script = path.resolve('skills/cli-worker-bridge/scripts/bridge.mjs');
+import { Store } from '../skills/agent-outsource/scripts/db.mjs';
+import { sleep, identity } from '../skills/agent-outsource/scripts/process.mjs';
+const script = path.resolve('skills/agent-outsource/scripts/bridge.mjs');
 async function until(fn, timeout = 25000) {
   const start = Date.now();
   for (;;) { const result = fn(); if (result) return result; if (Date.now() - start > timeout) throw new Error('Timed out'); await sleep(100); }
