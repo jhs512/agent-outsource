@@ -27,3 +27,5 @@ The service separates execution from delivery. Notification retries never rerun 
 For a provider hook failure, inspect the named hook and existing artifacts using [provider recovery guidance](references/providers.md) before an explicit follow-up. Do not automatically rerun failed work or disable unrelated hooks.
 
 For Antigravity, include the absolute assigned workspace and output paths in the task prompt. Its native command tool may start in its scratch directory even when the CLI process cwd is set; verify artifacts at the requested absolute paths.
+
+For preview servers or watchers, require a separate background process with redirected stdout/stderr, a recorded PID, and a bounded readiness check; on Windows use a hidden process. A worker tool call must not wait indefinitely for the server lifetime. Stop only the identified task-owned process when cleanup is needed.

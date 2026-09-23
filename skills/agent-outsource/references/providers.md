@@ -23,3 +23,11 @@ On this Windows installation, the orca-status handlers referenced five missing s
 The CLI's final structured outcome contains `status` (completed, waiting_user, failed), `summary`, and `question`. Native provider errors override a claimed task success. Missing or malformed outcomes become needs_review. Summaries are not independent artifact verification.
 
 Raw stdout/stderr stay on disk. A bounded streaming parser detects oversized events, retains their raw logs, and prevents silently interpreting a partial result as completion.
+
+## Windows output and long-lived processes
+
+A resumed agy run produced replacement characters in localized PowerShell directory listings before a foreground server started. Its final native ERROR reported protobuf invalid UTF-8 even though artifact verification succeeded. The external JSONL itself was valid UTF-8, stderr was empty, and the server log was ASCII. These observations locate corrupted text in provider tool output, but do not prove whether final serialization used current output or earlier conversation history. Do not relabel native ERROR as completed or assume a fresh conversation repairs it.
+
+For new Windows commands that emit text, explicitly set UTF-8 within the command's PowerShell process (`[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)`). Prefer structured output or suppress unneeded formatted directory tables. This reduces encoding ambiguity; it is not a verified fix for agy's internal serialization. Do not change global code-page settings or retry a completed implementation merely to obtain a success label. Report verified artifacts separately from provider execution status.
+
+Launch preview servers separately with stdout/stderr redirected to files, retain the actual process identity, and perform a bounded HTTP readiness check. On Windows use a hidden process. Keep the serving process out of a foreground tool call that waits for exit. Preserve existing services and terminate only task-owned processes whose identity has been verified.

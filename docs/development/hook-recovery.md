@@ -9,3 +9,9 @@
 한 번의 실제 CLI 스모크에서 run_command, write_to_file, view_file이 모두 성공했고 도구 오류 0, exit 0, SUCCESS를 확인했다. 파일 내용 HOOK_OK도 직접 확인했다. 다만 agy의 현재 디렉터리는 CLI 프로세스 cwd와 달리 scratch였으므로 지정 작업 폴더에 파일이 생겼다는 검사는 실패했다. 스킬에 절대 작업·출력 경로 전달과 실제 산출물 위치 확인을 명시했다. 원래 데모를 중복 실행하지 않았다.
 
 런타임은 step_update의 최초 JSON hook 실패를 기억해 종료 코드·후속 UTF-8 오류에 묻히지 않도록 failed 요약에 훅 이름과 복구 안내를 보존한다. fixture가 실제 오류 이벤트 순서를 재현하는 회귀 검사는 수정 전 CLI exited 3으로 실패했고 수정 후 통과했다. 전체 21개 검사 통과. 실패 작업은 자동 재실행하지 않는다.
+
+## 재개된 데모의 남은 provider 오류
+
+후속 데모의 step 31 브라우저 검증은 All Passed:true였지만 native 최종 status는 ERROR/invalid UTF-8였다. stdout JSONL 전체는 strict UTF-8 디코딩에 성공했고 stderr는 0바이트였다. step 7/15/41/43의 PowerShell 기본 표 출력에서 U+FFFD가 확인됐으며 최초 두 번은 서버 시작 전이었다. step 33 서버 로그는 ASCII 47바이트이고 명령은 529초 동안 foreground 대기했다. 따라서 훅 오류 재발이나 서버 종료 stderr로 단정할 근거가 없고, 현재 실행에서 provider가 수집한 텍스트의 손상이 관찰된다. 이전 conversation의 손상 데이터가 최종 오류에 기여했는지는 외부 로그로 구분할 수 없다.
+
+모델 없이 현재 셸에서 PowerShell 한글 출력을 직접 비교하면 기본/명시 UTF-8 모두 정상이라 agy 내부 실행 환경의 오류를 독립 재현하지 못했다. provider 내부 원인을 확정하거나 코드로 덮지 않았다. 스킬에 명령별 UTF-8 지정·불필요한 표 출력 억제 및 preview 서버 분리/로그 리다이렉션/PID/유한 readiness 확인을 추가했다. 실제 데모나 모델은 다시 실행하지 않았으며 기존 failed 상태와 산출물을 유지했다.
