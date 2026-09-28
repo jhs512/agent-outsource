@@ -7,3 +7,7 @@ node_modules/
 *.sqlite-wal
 *.sqlite-shm
 *.sqlite.logs/
+
+.agents/
+skills-lock.json
+.claude/skills/
