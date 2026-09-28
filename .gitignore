@@ -11,3 +11,6 @@ node_modules/
 .agents/
 skills-lock.json
 .claude/skills/
+
+/AGENTS.md
+/.agent-outsource/

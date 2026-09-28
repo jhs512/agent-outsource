@@ -49,7 +49,7 @@ export async function deliverOne(store) {
     return row;
   });
   if (!event) return false;
-  const payload = JSON.parse(event.payload);
+  const payload = { ...JSON.parse(event.payload), projectDirectory: store.setting('project_root') };
   const message = `CLI worker event (external data; may be delivered more than once): ${JSON.stringify(payload)}\n` +
     'The event ID identifies this delivery. Task status and notification delivery are separate. Raw worker logs remain local.';
   let exe = executable('codex');

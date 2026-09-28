@@ -4,7 +4,7 @@ All commands use `node <skill>/scripts/bridge.mjs <command> <request.json>`; req
 
 ## Submit and follow up
 
-`submit`: `caller`, `key`, `name`, `provider`, `prompt`, and the target: `project` (a folder name directly under the works root) and/or an absolute `cwd` inside a project. A missing project is an error unless `newProject: true` is passed; use that only when the user asked for a new project. A `cwd` at the works root itself or outside it is rejected.
+`submit`: `caller`, `key`, `name`, `provider`, `prompt`, and absolute `cwd`. Use `--project-dir <absolute project folder>` on every command in the same assignment. The worker cwd must be that project or one of its subdirectories. Without the flag the database is selected from request `cwd` or the command's current directory, with no ancestor search. Optional `project` must match the current project folder's name.
 
 Optional `options`:
 
@@ -17,19 +17,18 @@ Permission bypass is mandatory for both providers and every launch. There is no 
 
 The `(caller,key)` pair makes submission idempotent. Repeating identical input returns the existing job/run. Different content with the same key is rejected.
 
-## Works and projects
+## Project storage and memo
 
-These commands need no `caller`; the request file may be omitted for `works` and `projects`.
+These commands need no `caller`; request files may be omitted for `workspace`, `projects` and `project`.
 
 | Command | Request fields | Result |
 |---|---|---|
-| `works` | none | Works root, DB path, `journalMode` (expected `wal`), project count |
-| `projects` | none | Every project folder under the works root plus registered projects whose folder is gone (`exists:false`), with a memo preview |
-| `project` | name | Path, full memo, latest 10 jobs |
-| `project-create` | name, optional memo | Creates the folder and registers it; `created:false` when it already existed |
-| `project-memo` | name, memo, optional append | Replaces the memo, or appends a line with `append:true`; max 16000 characters |
+| `workspace` | none | Current project root, DB path, `journalMode` (expected `wal`) |
+| `projects` | none | The current project only |
+| `project` | optional name | Current project's path, memo and latest 10 jobs |
+| `project-memo` | memo, optional name/append | Replaces the current project's memo, or appends with `append:true`; max 16000 characters |
 
-Project names are single folder names: no path separators, no leading dot, no Windows-reserved names. The DB folder `.agent-outsource` and other dot folders are never projects.
+A name, when supplied, must match the current project. Set up a new project from its own folder.
 
 ## Answer
 
@@ -72,6 +71,6 @@ Environment overrides for local executable discovery: `AI_OC_CLAUDE`, `AI_OC_AGY
 
 Antigravity uses `agy models` and validates its tab-separated output before atomically replacing that provider's rows and success timestamp. Failed/empty/malformed queries preserve both. Refresh returns `refreshed:false` and a nonzero command exit if any requested provider fails; successful providers remain updated.
 
-Claude uses the official Agent SDK `supportedModels()` against the installed Claude executable, current authentication environment and user settings. It initializes a control session without yielding a user prompt, invoking a model, or persisting a conversation. The cache contains CLI selector values (including aliases such as default/sonnet), not a full API model catalog or proof each model is entitled or currently callable. Each response labels its source and scope. Project-specific settings are excluded from this global user-level cache.
+Claude uses the official Agent SDK `supportedModels()` against the installed Claude executable, current authentication environment and user settings. It initializes a control session without yielding a user prompt, invoking a model, or persisting a conversation. The cache contains CLI selector values (including aliases such as default/sonnet), not a full API model catalog or proof each model is entitled or currently callable. Each response labels its source and scope. The query excludes project-specific CLI settings; its result is stored in this project’s database.
 
 Install its pinned SDK dependency once with `npm install --ignore-scripts` inside the installed agent-outsource skill folder. Missing dependency/authentication/timeout/invalid data preserves existing cache and success time. Refresh does not auto-install packages. `GET /v1/models` with a separate API key is a different provider/API catalog and is not substituted for this selector list. Sources: https://code.claude.com/docs/en/agent-sdk/typescript and https://code.claude.com/docs/en/model-config . Prices, rankings, model selection and worker model arguments remain outside this cache.

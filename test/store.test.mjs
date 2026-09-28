@@ -78,6 +78,7 @@ test('T19 result/notification atomic, cancellation wins, terminal result retaine
 });
 test('T10/T15 notification failure preserves result, retry carries same event ID, ack is idempotent', async () => {
   const dir = temporary(), db = new Store(path.join(dir, 'test.sqlite'));
+  db.setSetting('project_root', dir);
   const { runId } = db.submit(request()); db.claim('owner'); db.finish(runId, 'completed', 'work done', { value: 42 });
   process.env.AI_OC_TEST_MODE = '1'; process.env.AI_OC_TEST_NOTIFIER = path.resolve('test/fixtures/notifier.mjs'); process.env.AI_OC_TEST_DIR = dir;
   fs.writeFileSync(path.join(dir, 'fail-notify'), '1');
@@ -94,6 +95,8 @@ test('T10/T15 notification failure preserves result, retry carries same event ID
   await deliverOne(db);
   const duplicated = fs.readFileSync(path.join(dir, 'notifications.jsonl'), 'utf8').trim().split('\n');
   assert.equal(duplicated.length, 2);
+  const message = JSON.parse(duplicated[0]).message;
+  assert.ok(message.includes(JSON.stringify(dir)), 'notification identifies its project database');
   assert.ok(duplicated.every(line => line.includes(first.id)), 'uncertain delivery reuses the same event ID');
   assert.equal(db.ack(first.id, 'other').acknowledged, false);
   assert.equal(db.ack(first.id, 'caller-a').acknowledged, true);

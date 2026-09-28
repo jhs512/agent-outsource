@@ -2,57 +2,17 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 
 export const dataDirName = '.agent-outsource', dbName = 'agent-outsource.sqlite';
-// The DB lives inside the user's works root, never in a global location.
-export const worksDb = root => path.join(path.resolve(root), dataDirName, dbName);
-function copyTree(from, to) {
-  fs.mkdirSync(to, { recursive: true });
-  for (const entry of fs.readdirSync(from, { recursive: true, withFileTypes: true })) {
-    const source = path.join(entry.parentPath, entry.name), target = path.join(to, path.relative(from, source));
-    if (entry.isDirectory()) fs.mkdirSync(target, { recursive: true });
-    else { fs.mkdirSync(path.dirname(target), { recursive: true }); fs.copyFileSync(source, target); }
-  }
-}
-// Copies a pre-works home database into the works DB once; the old file is renamed *.migrated, never deleted.
-export async function migrateLegacyDb(target, { home = os.homedir(), alive = async () => false } = {}) {
-  const root = path.resolve(home);
-  target = path.resolve(target);
-  const sources = [path.join(root, dataDirName, dbName), path.join(root, dbName), path.join(root, 'ai-oc.sqlite')]
-    .filter(file => path.resolve(file) !== target && fs.existsSync(file));
-  if (!sources.length) return null;
-  if (sources.length > 1) throw new Error(`Multiple legacy databases exist (${sources.join(', ')}); reconcile them before continuing.`);
-  const legacy = sources[0];
-  if (fs.existsSync(target)) throw new Error(`Legacy database ${legacy} and works database ${target} both exist; reconcile them before continuing.`);
-  fs.mkdirSync(path.dirname(target), { recursive: true });
-  const lock = path.join(path.dirname(target), 'migration-lock');
-  fs.mkdirSync(lock);
-  try {
-    const db = new DatabaseSync(legacy);
-    try {
-      db.exec('PRAGMA busy_timeout=5000');
-      const tables = new Set(db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(row => row.name));
-      const daemon = tables.has('daemon') ? db.prepare("SELECT pid,birth FROM daemon WHERE name='service'").get() : null;
-      if (daemon && await alive(daemon)) throw new Error(`Stop the old agent-outsource service before migrating (bridge.mjs stop --db "${legacy}").`);
-      if (tables.has('runs') && db.prepare("SELECT count(*) AS n FROM runs WHERE status IN ('running','waiting_user','waiting_permission')").get().n) {
-        throw new Error('Finish or cancel active tasks in the old database before migrating.');
-      }
-      db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
-      db.prepare('VACUUM INTO ?').run(target);
-    } finally { db.close(); }
-    if (fs.existsSync(`${legacy}.logs`)) copyTree(`${legacy}.logs`, `${target}.logs`);
-    fs.renameSync(legacy, `${legacy}.migrated`);
-    return legacy;
-  } finally { fs.rmdirSync(lock); }
-}
+// Each project owns its database and logs.
+export const projectDb = root => path.join(path.resolve(root), dataDirName, dbName);
 export const clip = (v, n = 1800) => String(v ?? '').slice(0, n);
 export const now = () => Date.now();
 export const uuid = () => randomUUID();
 export const active = ['queued', 'running', 'waiting_user', 'waiting_permission', 'recovery_blocked'];
 export class Store {
   constructor(filename) {
-    if (typeof filename !== 'string' || !filename) throw new Error('Database path is required; run agent-outsource-setup to choose a works folder.');
+    if (typeof filename !== 'string' || !filename) throw new Error('Database path is required; run agent-outsource-setup in the project folder.');
     this.filename = path.resolve(filename);
     fs.mkdirSync(path.dirname(this.filename), { recursive: true });
     this.db = new DatabaseSync(this.filename);

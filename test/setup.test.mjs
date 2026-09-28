@@ -5,46 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { inspectSetup } from '../skills/agent-outsource-setup/scripts/setup.mjs';
 import { executable } from '../skills/agent-outsource/scripts/executables.mjs';
-import { Store, worksDb, migrateLegacyDb } from '../skills/agent-outsource/scripts/db.mjs';
+import { Store, projectDb } from '../skills/agent-outsource/scripts/db.mjs';
 const temporary = () => fs.mkdtempSync(path.join(os.tmpdir(), 'ai-oc-setup-'));
-test('legacy home DB is copied into the works DB with logs and renamed, not deleted', async () => {
-  const home = temporary(), works = temporary(), legacy = path.join(home, '.agent-outsource', 'agent-outsource.sqlite');
-  const before = new Store(legacy);
-  const { jobId } = before.submit({ caller: 'fixture', key: 'migrate', name: 'preserved', cwd: process.cwd(), provider: 'claude', prompt: 'keep' });
-  before.run('INSERT INTO models VALUES(?,?,?)', 'claude', 'default', 'Default');
-  before.close();
-  fs.mkdirSync(`${legacy}.logs`);
-  fs.writeFileSync(path.join(`${legacy}.logs`, 'sample.log'), 'original log');
-  const target = worksDb(works);
-  assert.equal(await migrateLegacyDb(target, { home }), legacy);
-  assert.equal(fs.existsSync(legacy), false);
-  assert.equal(fs.existsSync(`${legacy}.migrated`), true);
-  assert.equal(fs.readFileSync(path.join(`${target}.logs`, 'sample.log'), 'utf8'), 'original log');
-  const after = new Store(target);
-  assert.equal(after.job(jobId).name, 'preserved');
-  assert.equal(after.get('SELECT model_id FROM models').model_id, 'default');
-  assert.equal(after.get('PRAGMA journal_mode').journal_mode, 'wal');
-  after.close();
-  assert.equal(await migrateLegacyDb(target, { home }), null);
-});
-test('legacy migration refuses a live old service, active runs and conflicting destinations', async () => {
-  const home = temporary(), legacy = path.join(home, 'ai-oc.sqlite');
-  const db = new Store(legacy);
-  db.run("INSERT INTO daemon VALUES('service','t',1,'b',0)");
-  db.close();
-  const target = worksDb(temporary());
-  await assert.rejects(migrateLegacyDb(target, { home, alive: async () => true }), /Stop the old/);
-  const active = new Store(legacy);
-  const { runId } = active.submit({ caller: 'fixture', key: 'busy', name: 'busy', cwd: process.cwd(), provider: 'claude', prompt: 'x' });
-  active.run("UPDATE runs SET status='running' WHERE id=?", runId); active.close();
-  await assert.rejects(migrateLegacyDb(target, { home }), /active tasks/);
-  fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.writeFileSync(target, 'do not overwrite');
-  await assert.rejects(migrateLegacyDb(target, { home }), /both exist/);
-  assert.equal(fs.existsSync(legacy), true);
-  assert.equal(fs.readFileSync(target, 'utf8'), 'do not overwrite');
-  assert.equal(fs.existsSync(path.join(path.dirname(target), 'migration-lock')), false);
-});
 const optionsText = '--dangerously-skip-permissions --input-format --output-format --resume --conversation';
 const fake = async (exe, args) => {
   if (args[0] === 'queue') return { ok: true, output: '--thread --message' };
@@ -97,13 +59,68 @@ test('executable discovery respects override, PATH, and a different user home', 
   assert.equal(executable('claude', { USERPROFILE: path.join(root, 'someone-else') }, 'win32'), path.join(userBin, 'claude.exe'));
 });
 
-test('setup records the chosen works folder and creates its WAL DB inside it', async () => {
-  const works = path.join(temporary(), 'my works');
-  const result = await inspectSetup({ works, home: temporary(), platform: 'win32', run: fake });
+test('setup defaults to current project and leaves parent and home databases untouched', async () => {
+  const parent = temporary(), project = path.join(parent, 'app'), home = temporary();
+  fs.mkdirSync(project);
+  const unrelated = [projectDb(parent), projectDb(home), path.join(home, 'agent-outsource.sqlite'), path.join(home, 'ai-oc.sqlite')];
+  for (const file of unrelated) {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, 'unrelated database');
+    fs.mkdirSync(`${file}.logs`); fs.writeFileSync(path.join(`${file}.logs`, 'keep'), 'keep log');
+  }
+  const originalCwd = process.cwd(), originalHome = process.env.USERPROFILE, originalWorks = process.env.AGENT_OUTSOURCE_WORKS;
+  let result;
+  try {
+    process.chdir(project); process.env.USERPROFILE = home; process.env.AGENT_OUTSOURCE_WORKS = parent;
+    result = await inspectSetup({ platform: 'win32', run: fake });
+  } finally {
+    process.chdir(originalCwd);
+    for (const [key, value] of [['USERPROFILE', originalHome], ['AGENT_OUTSOURCE_WORKS', originalWorks]]) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+  }
   assert.equal(result.configured, true);
-  assert.equal(result.checks.find(c => c.name === 'works 폴더').detail, works);
-  assert.match(result.checks.find(c => c.name === 'SQLite').detail, /journal_mode: wal/);
-  const db = new Store(worksDb(works));
-  assert.equal(db.setting('works_root'), works);
+  assert.equal(result.checks.find(c => c.name === '프로젝트 폴더').detail, project);
+  const db = new Store(projectDb(project));
+  assert.equal(db.setting('project_root'), project);
+  assert.equal(db.get('PRAGMA journal_mode').journal_mode, 'wal');
+  assert.equal(db.get('PRAGMA integrity_check').integrity_check, 'ok');
+  assert.equal(db.get('SELECT count(*) n FROM jobs').n, 0);
   db.close();
+  for (const file of unrelated) {
+    assert.equal(fs.readFileSync(file, 'utf8'), 'unrelated database');
+    assert.equal(fs.readFileSync(path.join(`${file}.logs`, 'keep'), 'utf8'), 'keep log');
+    assert.equal(fs.existsSync(`${file}.migrated`), false);
+  }
+});
+
+test('project instructions preserve custom content, update once and ignore generated files', async () => {
+  const { prepareProjectFiles } = await import('../skills/agent-outsource-setup/scripts/project-files.mjs');
+  const { execFileSync } = await import('node:child_process');
+  const root = temporary();
+  fs.writeFileSync(path.join(root, 'AGENTS.md'), '# Custom instructions\nKeep my conventions.\n');
+  fs.writeFileSync(path.join(root, '.gitignore'), '# Custom ignore\nbuild/\n!AGENTS.md\n');
+  prepareProjectFiles(root);
+  const agents = fs.readFileSync(path.join(root, 'AGENTS.md'), 'utf8');
+  const ignore = fs.readFileSync(path.join(root, '.gitignore'), 'utf8');
+  assert.ok(agents.startsWith('# Custom instructions\nKeep my conventions.\n'));
+  assert.equal(agents.split('<!-- agent-outsource:begin -->').length, 2);
+  assert.equal(prepareProjectFiles(root).changed, false);
+  assert.equal(fs.readFileSync(path.join(root, '.gitignore'), 'utf8'), ignore);
+  execFileSync('git', ['init', root]);
+  for (const file of ['AGENTS.md', '.agent-outsource/agent-outsource.sqlite', '.agent-outsource/request.json']) {
+    assert.equal(execFileSync('git', ['-C', root, 'check-ignore', '--', file], { encoding: 'utf8' }).trim(), file);
+  }
+  fs.writeFileSync(path.join(root, 'AGENTS.md'), agents.replace('Delegate nearly all substantive project work', 'Old policy'));
+  prepareProjectFiles(root);
+  assert.equal(fs.readFileSync(path.join(root, 'AGENTS.md'), 'utf8'), agents);
+});
+test('ambiguous policy markers preserve both original files', async () => {
+  const { prepareProjectFiles } = await import('../skills/agent-outsource-setup/scripts/project-files.mjs');
+  const root = temporary(), file = path.join(root, 'AGENTS.md');
+  const original = 'Keep this\n<!-- agent-outsource:begin -->\nunfinished';
+  fs.writeFileSync(file, original);
+  assert.throws(() => prepareProjectFiles(root), /ambiguous/);
+  assert.equal(fs.readFileSync(file, 'utf8'), original);
+  assert.equal(fs.existsSync(path.join(root, '.gitignore')), false);
 });
