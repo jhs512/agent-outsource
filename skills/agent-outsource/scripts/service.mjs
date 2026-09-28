@@ -6,6 +6,7 @@ import { Store, clip, now, uuid } from './db.mjs';
 import { identity, killTree, sleep, boundedCommand } from './process.mjs';
 import { providerCommand, promptMessage, outcome, liveReply, JsonLines } from './providers.mjs';
 import { executable } from './executables.mjs';
+import { workContext } from './works.mjs';
 
 export async function acquire(store, token) {
   const old = store.get("SELECT * FROM daemon WHERE name='service'");
@@ -158,7 +159,8 @@ export async function serve(filename) {
       if (!ctx.birth && !ctx.closed) { ctx.error = 'Cannot verify worker identity'; child.stdin.end(); child.kill(); return; }
       store.run('UPDATE runs SET child_pid=?,child_birth=? WHERE id=?', child.pid, ctx.birth, run.id);
     }
-    if (!ctx.closed) child.stdin.write(JSON.stringify(promptMessage(job.provider, run.input)) + '\n');
+    // A resumed session already received the workspace context on its first turn.
+    if (!ctx.closed) child.stdin.write(JSON.stringify(promptMessage(job.provider, run.input, process.platform, job.session ? '' : workContext(store, job))) + '\n');
     if (options.timeoutMs && !ctx.closed) ctx.timer = setTimeout(() => { ctx.error = 'Explicit execution timeout'; ctx.stopRequested = true; }, options.timeoutMs);
   }
   try {

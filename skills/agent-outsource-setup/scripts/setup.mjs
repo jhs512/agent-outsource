@@ -8,7 +8,7 @@ async function probe(exe, args) {
     (error, stdout, stderr) => resolve({ ok: !error, stdout: String(stdout || ''), output: String(stdout || '') + String(stderr || ''), code: error?.code })));
 }
 export async function inspectSetup({ bridgeDirectory = fileURLToPath(new URL('../../agent-outsource/', import.meta.url)),
-  databasePath, run = probe, platform = process.platform, nodeVersion = process.versions.node } = {}) {
+  works, databasePath, home, run = probe, platform = process.platform, nodeVersion = process.versions.node } = {}) {
   // script lives in setup/scripts; sibling skills are two levels above the script directory.
   const checks = [], workers = [];
   const add = (name, status, detail) => checks.push({ name, status, detail });
@@ -22,10 +22,30 @@ export async function inspectSetup({ bridgeDirectory = fileURLToPath(new URL('..
   }
   add('작업 스킬', 'ok', bridgeDirectory);
   const { executable } = await import(pathToFileURL(path.join(bridgeDirectory, 'scripts', 'executables.mjs')));
+  const { Store, worksDb, migrateLegacyDb } = await import(pathToFileURL(path.join(bridgeDirectory, 'scripts', 'db.mjs')));
+  const { resolveWorks } = await import(pathToFileURL(path.join(bridgeDirectory, 'scripts', 'works.mjs')));
+  const { identity } = await import(pathToFileURL(path.join(bridgeDirectory, 'scripts', 'process.mjs')));
+  // The works folder is the user's answer to the setup question; an existing works DB above cwd is reused.
+  const root = works ? path.resolve(works) : databasePath ? null : resolveWorks({ starts: [process.cwd()] });
+  if (!root && !databasePath) {
+    add('works 폴더', 'missing', '프로젝트를 모아 둘 works 폴더를 정해 --works <절대경로>로 다시 실행하세요.');
+    return { configured: false, workers, checks };
+  }
+  if (root) {
+    try {
+      fs.mkdirSync(root, { recursive: true });
+      add('works 폴더', 'ok', root);
+    } catch (error) { add('works 폴더', 'missing', `${root}: ${error.message}`); return { configured: false, workers, checks }; }
+    databasePath ??= worksDb(root);
+    try {
+      const legacy = await migrateLegacyDb(databasePath, { home, alive: async ({ pid, birth }) => await identity(pid) === birth });
+      if (legacy) add('기존 DB 이전', 'ok', `${legacy} → ${databasePath} (원본은 .migrated로 이름 변경)`);
+    } catch (error) { add('기존 DB 이전', 'missing', error.message); return { configured: false, workers, checks }; }
+  }
   try {
-    const { Store } = await import(pathToFileURL(path.join(bridgeDirectory, 'scripts', 'db.mjs')));
     const store = new Store(databasePath);
     try {
+      if (root) store.setSetting('works_root', root);
       const journal = store.get('PRAGMA journal_mode').journal_mode;
       const integrity = store.get('PRAGMA quick_check').quick_check;
       store.db.exec('BEGIN IMMEDIATE; ROLLBACK;');
@@ -34,9 +54,9 @@ export async function inspectSetup({ bridgeDirectory = fileURLToPath(new URL('..
       const probe = path.join(logDirectory, `.setup-write-${process.pid}-${Date.now()}`);
       const fd = fs.openSync(probe, 'wx');
       try { fs.writeSync(fd, 'write-check'); } finally { fs.closeSync(fd); fs.unlinkSync(probe); }
-      add('SQLite', journal === 'wal' && integrity === 'ok' ? 'ok' : 'missing', `${store.filename} (WAL: ${journal}, 검사: ${integrity})`);
+      add('SQLite', journal === 'wal' && integrity === 'ok' ? 'ok' : 'missing', `${store.filename} (journal_mode: ${journal}, 검사: ${integrity})`);
     } finally { store.close(); }
-  } catch (error) { add('SQLite', 'missing', `공유 DB/로그 쓰기를 준비하지 못했습니다: ${error.message}. workspace-write에서는 전용 데이터 디렉터리만 writable_roots에 추가하고 새 작업에서 확인하세요.`); }
+  } catch (error) { add('SQLite', 'missing', `works DB/로그 쓰기를 준비하지 못했습니다: ${error.message}. workspace-write에서는 works 폴더를 writable_roots에 추가하고 새 작업에서 확인하세요.`); }
   const codex = executable('codex');
   const queue = await run(codex, ['queue', '--help']);
   add('Codex 알림', queue.ok && /--thread/.test(queue.output) && /--message/.test(queue.output) ? 'ok' : 'missing',
@@ -60,7 +80,8 @@ export async function inspectSetup({ bridgeDirectory = fileURLToPath(new URL('..
     note: '설치·기능 검사는 모델을 호출하지 않습니다. 로그인/실제 알림 수신까지 보장하는 결과는 아닙니다. 작업 실행 시 권한은 자동 승인됩니다.' };
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  inspectSetup().then(result => {
+  const worksIndex = process.argv.indexOf('--works');
+  inspectSetup({ works: worksIndex < 0 ? undefined : process.argv[worksIndex + 1] }).then(result => {
     if (process.argv.includes('--json')) console.log(JSON.stringify(result, null, 2));
     else {
       console.log(result.configured ? '설치 및 실행 기능 검사 통과. 아래 수동 확인도 완료하세요.' : '아래 준비 항목을 해결한 뒤 셋업을 다시 실행하세요.');

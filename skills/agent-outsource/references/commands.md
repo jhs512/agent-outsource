@@ -4,7 +4,7 @@ All commands use `node <skill>/scripts/bridge.mjs <command> <request.json>`; req
 
 ## Submit and follow up
 
-`submit`: `caller`, `key`, `name`, `provider`, absolute `cwd`, `prompt`.
+`submit`: `caller`, `key`, `name`, `provider`, `prompt`, and the target: `project` (a folder name directly under the works root) and/or an absolute `cwd` inside a project. A missing project is an error unless `newProject: true` is passed; use that only when the user asked for a new project. A `cwd` at the works root itself or outside it is rejected.
 
 Optional `options`:
 
@@ -16,6 +16,20 @@ Permission bypass is mandatory for both providers and every launch. There is no 
 `followup` uses the same shape plus `jobId`. Keep provider and cwd unchanged. It starts a new CLI process with the stored provider session ID. The original run and result remain in the DB. Active runs require `answer` or `cancel`, not another simultaneous follow-up.
 
 The `(caller,key)` pair makes submission idempotent. Repeating identical input returns the existing job/run. Different content with the same key is rejected.
+
+## Works and projects
+
+These commands need no `caller`; the request file may be omitted for `works` and `projects`.
+
+| Command | Request fields | Result |
+|---|---|---|
+| `works` | none | Works root, DB path, `journalMode` (expected `wal`), project count |
+| `projects` | none | Every project folder under the works root plus registered projects whose folder is gone (`exists:false`), with a memo preview |
+| `project` | name | Path, full memo, latest 10 jobs |
+| `project-create` | name, optional memo | Creates the folder and registers it; `created:false` when it already existed |
+| `project-memo` | name, memo, optional append | Replaces the memo, or appends a line with `append:true`; max 16000 characters |
+
+Project names are single folder names: no path separators, no leading dot, no Windows-reserved names. The DB folder `.agent-outsource` and other dot folders are never projects.
 
 ## Answer
 

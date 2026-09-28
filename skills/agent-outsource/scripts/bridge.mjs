@@ -2,14 +2,22 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-import { Store, defaultDb, clip, now } from './db.mjs';
+import { Store, worksDb, clip, now } from './db.mjs';
+import { resolveWorks, resolveTarget, listProjects, getProject, createProject, setMemo } from './works.mjs';
 import { identity, sleep } from './process.mjs';
 import { serve } from './service.mjs';
 import { cachedModels, refreshModels } from './models.mjs';
 
 const args = process.argv.slice(2);
-const dbIndex = args.indexOf('--db');
-const filename = dbIndex < 0 ? defaultDb : path.resolve(args.splice(dbIndex, 2)[1]);
+const option = name => { const index = args.indexOf(name); return index < 0 ? null : path.resolve(args.splice(index, 2)[1]); };
+const dbOption = option('--db'), worksOption = option('--works');
+function databaseFor(req = {}) {
+  if (dbOption) return dbOption;
+  const root = resolveWorks({ explicit: worksOption, starts: [req.cwd, process.cwd()] });
+  if (!root || !fs.existsSync(worksDb(root))) throw new Error('No works folder is set up here. Ask the user to run agent-outsource-setup, or pass --works <folder>.');
+  return worksDb(root);
+}
+const noCaller = ['service', 'stop', 'works', 'projects', 'project', 'project-create', 'project-memo'];
 const [action = 'help', input] = args;
 export async function ensureService(store) {
   const row = store.get("SELECT * FROM daemon WHERE name='service'");
@@ -27,11 +35,11 @@ export async function ensureService(store) {
   throw new Error('Service did not start; request remains in SQLite. Inspect service.log');
 }
 async function main() {
-  if (action === 'serve') return serve(filename);
-  if (action === 'help') return console.log('bridge.mjs <submit|followup|answer|cancel|status|question|result|log|events|ack|retry|service|stop|models|models-refresh> <request.json> [--db test.sqlite]');
+  if (action === 'serve') return serve(databaseFor());
+  if (action === 'help') return console.log('bridge.mjs <submit|followup|answer|cancel|status|question|result|log|events|ack|retry|service|stop|models|models-refresh|works|projects|project|project-create|project-memo> <request.json> [--works folder] [--db test.sqlite]');
   const req = input ? JSON.parse(fs.readFileSync(path.resolve(input), 'utf8')) : {};
-  if (!['service', 'stop'].includes(action) && (typeof req.caller !== 'string' || !req.caller.trim())) throw new Error('caller is required');
-  const store = new Store(filename);
+  if (!noCaller.includes(action) && (typeof req.caller !== 'string' || !req.caller.trim())) throw new Error('caller is required');
+  const store = new Store(databaseFor(req));
   try {
     let value;
     if (action === 'models' || action === 'models-refresh') {
@@ -40,8 +48,15 @@ async function main() {
       for (const provider of providers) value.push(action === 'models' ? cachedModels(store, provider) : await refreshModels(store, provider));
       if (value.some(item => item.refreshed === false)) process.exitCode = 1;
     } else if (['submit', 'followup'].includes(action)) {
-      value = store.submit(req); await ensureService(store);
-    } else if (action === 'answer') { value = store.answer(req); await ensureService(store); }
+      // --db alone (isolated verification) may have no works root; everything else is project-scoped.
+      value = store.submit(dbOption && !store.setting('works_root') ? req : resolveTarget(store, req)); await ensureService(store);
+    } else if (action === 'works') {
+      value = { root: store.setting('works_root'), database: store.filename, journalMode: store.get('PRAGMA journal_mode').journal_mode,
+        projects: store.get('SELECT count(*) AS n FROM projects').n };
+    } else if (action === 'projects') value = listProjects(store);
+    else if (action === 'project') value = getProject(store, req.name);
+    else if (action === 'project-create') value = createProject(store, req.name, req.memo);
+    else if (action === 'project-memo') value = setMemo(store, req.name, req.memo, req.append === true); else if (action === 'answer') { value = store.answer(req); await ensureService(store); }
     else if (action === 'cancel') { value = store.cancel(req.jobId, req.caller); await ensureService(store); }
     else if (action === 'service') value = await ensureService(store);
     else if (action === 'stop') {
